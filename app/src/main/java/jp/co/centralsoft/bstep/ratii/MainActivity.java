@@ -1,180 +1,195 @@
 package jp.co.centralsoft.bstep.ratii;
 
-import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothDevice;
-import android.bluetooth.BluetoothManager;
-import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
-import android.view.Menu;
-import android.view.MenuItem;
+import android.os.Handler;
+import android.os.RemoteException;
+import android.os.Vibrator;
+import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
-public class MainActivity extends AppCompatActivity {
+import org.altbeacon.beacon.Beacon;
+import org.altbeacon.beacon.BeaconConsumer;
+import org.altbeacon.beacon.BeaconManager;
+import org.altbeacon.beacon.BeaconParser;
+import org.altbeacon.beacon.Identifier;
+import org.altbeacon.beacon.MonitorNotifier;
+import org.altbeacon.beacon.RangeNotifier;
+import org.altbeacon.beacon.Region;
 
-    private boolean bltbln;
-    private static final long SCAN_PERIOD = 10000;
-    private BluetoothAdapter mBluetoothAdapter;
-    //private Handler mHandler;
-    private Button push_btnst;
-    private Button push_btned;
+import java.util.Collection;
 
-    private TextView txt_minor;
-    private TextView txt_major;
-    private TextView txt_uuid;
+public class MainActivity extends AppCompatActivity implements BeaconConsumer {
 
+    private final static String IBEACON_FORMAT = "m:2-3=0215,i:4-19,i:20-21,i:22-23,p:24-24";
+    TextView destanceVal;
+    TextView messageVal;
+    Button startServiceBtn;
+    Button stopServiceBtn;
+    BeaconManager beaconManager;
+    Region region;
+    Handler mHandler = new Handler();
 
-
+    boolean scanFlg;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        final BluetoothManager bluetoothManager = (BluetoothManager)getSystemService(Context.BLUETOOTH_SERVICE);
-        mBluetoothAdapter = bluetoothManager.getAdapter();
-        //mBluetoothAdapter.startLeScan(mLeScanCallback);
+        destanceVal = (TextView) findViewById(R.id.distanceVal);
+        messageVal = (TextView) findViewById(R.id.messageVal);
+        startServiceBtn = (Button) findViewById(R.id.startServiceBtn);
+        stopServiceBtn = (Button) findViewById(R.id.stopServiceBtn);
 
-        push_btnst = (Button)findViewById(R.id.btn_st);
-        push_btned = (Button)findViewById(R.id.btn_ed);
+        initializeTextContent();
 
-        txt_minor = (TextView)findViewById(R.id.minor);
-        txt_major = (TextView)findViewById(R.id.major);
-        txt_uuid = (TextView)findViewById(R.id.uuid);
-
-        push_btnst.setOnClickListener(new View.OnClickListener() {
+        // ボタンイベント(サービス開始ボタン)
+        startServiceBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                //Uri uri = Uri.parse("http://www.central-soft.co.jp");
-                //Intent i = new Intent(Intent.ACTION_VIEW,uri);
-                //startActivity(i);
-                bltbln = false;
-                txt_major.setText("");
-                txt_minor.setText("");
-                txt_uuid.setText("");
-
-                mBluetoothAdapter.startLeScan(mLeScanCallback);
-            }
-        });
-
-        push_btned.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                mBluetoothAdapter.stopLeScan(mLeScanCallback);
-
-                txt_major.setText("");
-                txt_minor.setText("");
-                txt_uuid.setText("");
-
-
-            }
-        });
-
-
-    }
-
-    private BluetoothAdapter.LeScanCallback mLeScanCallback = new BluetoothAdapter.LeScanCallback() {
-
-        @Override
-        public void onLeScan(BluetoothDevice device, int rssi, byte[] scanRecord) {
-
-
-
-            if (scanRecord.length > 30 && !bltbln) {
-                //iBeacon の場合 6 byte 目から、 9 byte 目はこの値に固定されている。
-                if ((scanRecord[5] == (byte) 0x4c) && (scanRecord[6] == (byte) 0x00) &&
-                        (scanRecord[7] == (byte) 0x02) && (scanRecord[8] == (byte) 0x15)) {
-
-                    String uuid2 = getScanData(9, 24, scanRecord);
-                    String major2 = getScanData(25, 26, scanRecord);
-                    String minor2 = getScanData(27, 28, scanRecord);
-                    String strength2 = String.valueOf(scanRecord[29]);
-
-                    String uuid = IntToHex2(scanRecord[9] & 0xff)
-                            + IntToHex2(scanRecord[10] & 0xff)
-                            + IntToHex2(scanRecord[11] & 0xff)
-                            + IntToHex2(scanRecord[12] & 0xff)
-                            + "-"
-                            + IntToHex2(scanRecord[13] & 0xff)
-                            + IntToHex2(scanRecord[14] & 0xff)
-                            + "-"
-                            + IntToHex2(scanRecord[15] & 0xff)
-                            + IntToHex2(scanRecord[16] & 0xff)
-                            + "-"
-                            + IntToHex2(scanRecord[17] & 0xff)
-                            + IntToHex2(scanRecord[18] & 0xff)
-                            + "-"
-                            + IntToHex2(scanRecord[19] & 0xff)
-                            + IntToHex2(scanRecord[20] & 0xff)
-                            + IntToHex2(scanRecord[21] & 0xff)
-                            + IntToHex2(scanRecord[22] & 0xff)
-                            + IntToHex2(scanRecord[23] & 0xff)
-                            + IntToHex2(scanRecord[24] & 0xff);
-
-                    String major = IntToHex2(scanRecord[25] & 0xff) + IntToHex2(scanRecord[26] & 0xff);
-                    String minor = IntToHex2(scanRecord[27] & 0xff) + IntToHex2(scanRecord[28] & 0xff);
-
-                    txt_major.setText(major);
-                    txt_minor.setText(minor);
-                    txt_uuid.setText(uuid);
-
-                    //検知
-                    bltbln = true;
-
-                    Uri uri = Uri.parse("http://www.central-soft.co.jp");
-                    Intent i = new Intent(Intent.ACTION_VIEW,uri);
-                    startActivity(i);
-
-
-
+                if(!scanFlg) {
+                    startScan();
                 }
             }
-        }
-        private String IntToHex2(int i) {
-            char hex_2[] = {Character.forDigit((i >> 4) & 0x0f, 16), Character.forDigit(i & 0x0f, 16)};
-            String hex_2_str = new String(hex_2);
-            return hex_2_str.toUpperCase();
-        }
+        });
 
-        public String getScanData(int start, int end, byte[] scanRecord) {
-            StringBuilder result = new StringBuilder(end - start);
-            for (int i = start; i <= end; i++) {
-                result.append(convertHex(scanRecord[i] & 0xff));
+        // ボタンイベント(サービス終了ボタン)
+        stopServiceBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                stopScan();
+                scanFlg = false;
             }
-            return result.toString();
-        }
+        });
 
-        public String convertHex(int i) {
-            char hexArray[] = {
-                    Character.forDigit((i >> 4) & 0x0f, 16), Character.forDigit(i & 0x0f, 16)
-            };
-            return new String(hexArray).toUpperCase();
-        }
-    };
+    }
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
+    protected void startScan() {
+
+        // インスタンス化
+        beaconManager = BeaconManager.getInstanceForApplication(this);
+        // パーサ設定(iBeaconのフォーマットを設定する)
+        beaconManager.getBeaconParsers().add(new BeaconParser().setBeaconLayout(IBEACON_FORMAT));
+
+        // uuidが"04137D10-42C4-41D1-8E23-FCEB7FDE5856"、
+        // major番号が"1"、minor番号が"1"のBeaconを監視する場合
+        Identifier uuid = Identifier.parse("04137D10-42C4-41D1-8E23-FCEB7FDE5856");
+        Identifier major = Identifier.parse("1");
+        Identifier minor = Identifier.parse("1");
+        region = new Region("BSTEP_TARGET", uuid, major, minor);
+        beaconManager.bind(this);
+    }
+
+    protected void stopScan() {
+        if(beaconManager!=null){
+            beaconManager.unbind(this); // サービスの停止
+            beaconManager = null;
+        }
+        initializeTextContent();
+    }
+
+    protected void initializeTextContent() {
+        // 初期化
+
+        destanceVal.setText("none");
+        messageVal.setText("サービス停止中");
+//        mHandler.post(new Runnable() {
+//            public void run() {
+//            }
+//        });
     }
 
     @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
+    protected void onPause() {
+        super.onPause();
+        stopScan();
+    }
 
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        stopScan();
+    }
+
+    @Override
+    public void onBeaconServiceConnect() {
+        try {
+            // ビーコン情報の監視を開始
+            beaconManager.startMonitoringBeaconsInRegion(region);
+        } catch (RemoteException e) {
+            e.printStackTrace();
         }
 
-        return super.onOptionsItemSelected(item);
+        beaconManager.setMonitorNotifier(new MonitorNotifier() {
+            @Override
+            public void didEnterRegion(Region region) {
+                // 領域への入場を検知
+
+                // レンジングの開始
+                try {
+                    beaconManager.startRangingBeaconsInRegion(region);
+                } catch (RemoteException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            @Override
+            public void didExitRegion(Region region) {
+                // 領域からの退場を検知
+                // レンジングの停止
+                try {
+                    beaconManager.stopRangingBeaconsInRegion(region);
+                } catch (RemoteException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            @Override
+            public void didDetermineStateForRegion(int i, Region region) {
+                // 領域への入退場のステータス変化を検知
+            }
+        });
+
+        beaconManager.setRangeNotifier(new RangeNotifier() {
+            @Override
+            public void didRangeBeaconsInRegion(Collection<Beacon> beacons, Region region) {
+
+                // 検出したビーコンの情報を全部Logに書き出す
+                for (final Beacon beacon : beacons) {
+                    // ログの出力
+                    Log.d("Beacon", "UUID:" + beacon.getId1() + ", major:" + beacon.getId2()
+                            + ", minor:" + beacon.getId3() + ", Distance:" + beacon.getDistance()
+                            + ",RSSI" + beacon.getRssi());
+
+                    final double distance = beacon.getDistance();
+
+                    mHandler.post(new Runnable() {
+                        public void run() {
+                            TextView distanceVal = (TextView) findViewById(R.id.distanceVal);
+                            distanceVal.setText(String.valueOf(distance));
+                            TextView messageVal = (TextView) findViewById(R.id.messageVal);
+                            if (distance < 2.0) {
+//                                messageVal.setText("ちかいよおおおお");
+                                Vibrator vibrator = (Vibrator) getSystemService(VIBRATOR_SERVICE);
+                                long[] pattern = {0, 200, 200, 200};
+                                vibrator.vibrate(pattern, -1);
+                                Uri uri = Uri.parse("http://www.central-soft.co.jp/");
+                                Intent i = new Intent(Intent.ACTION_VIEW,uri);
+                                startActivity(i);
+                            } else {
+                                messageVal.setText("まだまだー");
+                            }
+                        }
+                    });
+                }
+            }
+        });
     }
+
+
 }
