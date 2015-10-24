@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">Ratii</string>
-
-    <string name="hello_world">Hello world!</string>
-    <string name="action_settings">Settings</string>
+    <string name="title">BSTEP テストモジュール</string>
+    <string name="description">本アプリケーションは、iBeaconの技術を使用したアプリケーションです。みたいな説明を書く</string>
+    <string name="serviceStart">受信サービスを開始する</string>
+    <string name="serviceStop">受信サービスを終了する</string>
 </resources>
