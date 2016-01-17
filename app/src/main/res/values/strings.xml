@@ -1,7 +1,7 @@
 <resources>
-    <string name="app_name">Ratii</string>
-    <string name="title">BSTEP テストモジュール</string>
-    <string name="description">本アプリケーションは、iBeaconの技術を使用したアプリケーションです。みたいな説明を書く</string>
-    <string name="serviceStart">受信サービスを開始する</string>
-    <string name="serviceStop">受信サービスを終了する</string>
+    <string name="app_name">CS-BSTEP</string>
+    <string name="title">採用活動支援ツール</string>
+    <string name="description">本アプリケーションは、iBeaconの技術を使用したアプリケーションです。当社の採用ブースに接近することで当社社員の紹介ホームページをご覧いただくことが可能です</string>
+    <string name="serviceStart">START</string>
+    <string name="serviceStop">STOP</string>
 </resources>
