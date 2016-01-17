@@ -6,6 +6,7 @@ import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.IBinder;
 import android.os.RemoteException;
 import android.support.annotation.Nullable;
@@ -62,7 +63,7 @@ public class BeaconReceiveService extends Service implements BeaconConsumer {
         beaconManager.getBeaconParsers().add(new BeaconParser().setBeaconLayout(IBEACON_FORMAT));
 
         // 通知マネージャーのインスタンス化
-        notificationManager = (NotificationManager)getSystemService(Context.NOTIFICATION_SERVICE);
+        notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
     }
 
     @Override
@@ -158,32 +159,32 @@ public class BeaconReceiveService extends Service implements BeaconConsumer {
                             + ", minor:" + beacon.getId3() + ", Distance:" + beacon.getDistance()
                             + ",RSSI" + beacon.getRssi());
 
-//                    final double distance = beacon.getDistance();
+                    final double distance = beacon.getDistance();
 
-//                    mHandler.post(new Runnable() {
-//                        public void run() {
-//                            TextView distanceVal = (TextView) findViewById(R.id.distanceVal);
-//                            distanceVal.setText(String.valueOf(distance));
-//                            TextView messageVal = (TextView) findViewById(R.id.messageVal);
-//                            if (distance < 2) {
-////                                messageVal.setText("ちかいよおおおお");
-//                                Vibrator vibrator = (Vibrator) getSystemService(VIBRATOR_SERVICE);
-//                                long[] pattern = {0, 200, 200, 200};
-//                                vibrator.vibrate(pattern, -1);
-//                                Uri uri = Uri.parse("http://52.27.243.20/");
-//                                Intent i = new Intent(Intent.ACTION_VIEW, uri);
-//                                startActivity(i);
-//                            } else {
-//                                messageVal.setText("まだまだー");
-//                            }
-//                        }
-//                    });
+                    String message = "さーびすからのメッセージ";
+                    sendBroadCast(message);
+
+                    // サービスの停止
+                    onDestroy();
                 }
             }
         });
     }
 
+    protected void sendBroadCast(String message) {
 
+        Intent broadcastIntent = new Intent();
+        broadcastIntent.putExtra("message", message);
+        broadcastIntent.setAction("UPDATE_ACTION");
+        getBaseContext().sendBroadcast(broadcastIntent);
+
+    }
+
+    /**
+     * 通知領域の作成
+     * @param context
+     * @return
+     */
     private Notification getNotification(Context context) {
         Intent notificationIntent = new Intent(context, MainActivity.class);
         PendingIntent pendingIntent =
@@ -200,10 +201,8 @@ public class BeaconReceiveService extends Service implements BeaconConsumer {
         builder.setSmallIcon(android.R.drawable.ic_menu_info_details);
         Notification notification = builder.build();
 
-
         // 実行中フラグ
         notification.flags = Notification.FLAG_ONGOING_EVENT;
-
         return notification;
     }
 }
